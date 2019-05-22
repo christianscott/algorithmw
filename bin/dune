@@ -1,0 +1,4 @@
+(executable
+  (name algorithmw)
+  (public_name algorithmw)
+  (libraries base))
