@@ -172,16 +172,11 @@ let rec infer (env: type_env) (expr: expression) : (subst * concrete_type) = mat
     let result_t = TypeGenerator.next () in
     let (_, func_t) = infer env func in
     let (_, arg_t) = infer env arg in
-    let fucking_what = unify func_t arg_t in
-    (fucking_what, result_t)
+    let unified = unify func_t arg_t in
+    (unified, result_t)
 
 let rec string_of_type t = match t with
 | TInt -> "int"
 | TBool -> "bool"
 | TVariable (var) -> var
 | TFunction (t1, t2) -> Printf.sprintf "%s -> %s" (string_of_type t1) (string_of_type t2)
-
-let () =
-  let expr = ELambda ("x", (EApplication ((EVariable "x"), (ELiteral (LInt 0))))) in
-  let (_, inferred) = infer (Map.empty (module String)) expr in
-  Stdlib.print_string (string_of_type inferred)
