@@ -104,12 +104,6 @@ module Types_type_env : Types with type t := type_env = struct
   let apply subst env = Map.map ~f:(Types_scheme.apply subst) env
 end
 
-let generalize env t : scheme =
-  let ftv_t = Types_concrete_type.free_type_vars t in
-  let ftv_env = Types_type_env.free_type_vars env in
-  let vars = Set.to_list (Set.diff ftv_t ftv_env) in
-  (vars, t)
-
 module TypeGenerator = struct
   let next_variable = ref (Char.to_int 'a')
 
@@ -180,3 +174,14 @@ let rec infer (env: type_env) (expr: expression) : (subst * concrete_type) = mat
     let (_, arg_t) = infer env arg in
     let fucking_what = unify func_t arg_t in
     (fucking_what, result_t)
+
+let rec string_of_type t = match t with
+| TInt -> "int"
+| TBool -> "bool"
+| TVariable (var) -> var
+| TFunction (t1, t2) -> Printf.sprintf "%s -> %s" (string_of_type t1) (string_of_type t2)
+
+let () =
+  let expr = ELambda ("x", (EApplication ((EVariable "x"), (ELiteral (LInt 0))))) in
+  let (_, inferred) = infer (Map.empty (module String)) expr in
+  Stdlib.print_string (string_of_type inferred)
