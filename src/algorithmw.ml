@@ -20,6 +20,14 @@ type concrete_type =
   | TVariable of string
   | TFunction of concrete_type * concrete_type
 
+let rec string_of_type t =
+  match t with
+  | TInt -> "int"
+  | TBool -> "bool"
+  | TVariable var -> var
+  | TFunction (t1, t2) ->
+      Printf.sprintf "%s -> %s" (string_of_type t1) (string_of_type t2)
+
 (* 
  * quantifiers ???
  *
@@ -128,7 +136,6 @@ let instantiate tv (vars, t) =
   let subst = Map.of_alist_exn (module String) vars_with_types in
   Types_concrete_type.apply subst t
 
-(* Why am I not using this?
 exception FooBarRenameMe of string
 
 let is_var var t =
@@ -143,7 +150,8 @@ let var_bind var t =
     match Set.find ftvs ~f:(String.equal var) with
     | Some _ -> raise (FooBarRenameMe "AHHHH")
     | None -> Map.singleton (module String) var t
-*)
+
+exception NotUnifiable of string
 
 let rec unify t1 t2 =
   match (t1, t2) with
@@ -155,7 +163,12 @@ let rec unify t1 t2 =
           (Types_concrete_type.apply subst1 r2)
       in
       Subst.compose subst1 subst2
-  | TInt, TInt | TBool, TBool | _ -> Subst.null
+  | TVariable u, t -> var_bind u t
+  | t, TVariable u -> var_bind u t
+  | TInt, TInt | TBool, TBool -> Subst.null
+  | t, u ->
+    let msg = Printf.sprintf "types %s and %s cannot be unified" (string_of_type t) (string_of_type u) in
+    raise (NotUnifiable msg)
 
 exception UndefinedVariable of string
 
@@ -167,7 +180,7 @@ let rec infer_helper tv env expr : subst * concrete_type =
   | EVariable var -> (
       match Map.find env var with
       | Some scheme -> (Subst.null, instantiate tv scheme)
-      | None -> raise (UndefinedVariable "could not find given variable") )
+      | None -> raise (UndefinedVariable (Printf.sprintf "could not find variable %s" var)) )
   | ELambda (binder, body) ->
       let binder_t = Type_vars.next tv in
       let next_env =
@@ -191,20 +204,12 @@ let rec infer_helper tv env expr : subst * concrete_type =
       (merged_subst, body_t)
   | EApplication (func, arg) ->
       let result_t = Type_vars.next tv in
-      let _, func_t = infer_helper tv env func in
-      let _, arg_t = infer_helper tv env arg in
-      let unified = unify func_t arg_t in
-      (unified, result_t)
+      let s1, func_t = infer_helper tv env func in
+      let s2, arg_t = infer_helper tv (Types_type_env.apply s1 env) arg in
+      let s3 = unify (Types_concrete_type.apply s2 func_t) (TFunction (arg_t, result_t)) in
+      (s3, result_t)
 
 let infer expr =
   let tv = Type_vars.create () in
   let _, inferred = infer_helper tv Subst.null expr in
   inferred
-
-let rec string_of_type t =
-  match t with
-  | TInt -> "int"
-  | TBool -> "bool"
-  | TVariable var -> var
-  | TFunction (t1, t2) ->
-      Printf.sprintf "%s -> %s" (string_of_type t1) (string_of_type t2)
