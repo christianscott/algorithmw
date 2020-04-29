@@ -16,3 +16,5 @@ type concrete_type =
 val infer : expression -> concrete_type
 
 val string_of_type : concrete_type -> string
+
+val string_of_expression : expression -> string

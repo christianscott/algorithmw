@@ -57,7 +57,7 @@ let report_failures results ~n_tests ~n_failed =
     Printf.printf "%s\n" dots
   in
   Printf.printf "%d out of %d tests passing\n\n" (n_tests - n_failed) n_tests;
-  for i = 0 to (n_tests - 1) do
+  for i = 0 to n_tests - 1 do
     match List.nth results i with
     | Failure msg -> Printf.printf "test %d:\n  %s\n\n" (i + 1) (red msg)
     | _ -> ()

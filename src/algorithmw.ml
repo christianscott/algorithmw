@@ -14,6 +14,20 @@ type expression =
   (* let x = Expr in Expr *)
   | ELet of string * expression * expression
 
+let rec string_of_expression e =
+  match e with
+  | ELiteral l -> (
+      match l with
+      | LInt n -> Int.to_string n
+      | LBool b -> Bool.to_string b )
+  | EVariable v -> v
+  | EApplication (e1, e2) ->
+      Printf.sprintf "%s %s" (string_of_expression e1) (string_of_expression e2)
+  | ELambda (v, e) -> Printf.sprintf "%s -> %s" v (string_of_expression e)
+  | ELet (v, e1, e2) ->
+      Printf.sprintf "let %s = %s in %s" v (string_of_expression e1)
+        (string_of_expression e2)
+
 type concrete_type =
   | TInt
   | TBool
