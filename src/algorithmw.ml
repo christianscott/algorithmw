@@ -103,18 +103,27 @@ module Types_type_env : Types with type t := type_env = struct
   let apply subst env = Map.map ~f:(Types_scheme.apply subst) env
 end
 
-module TypeGenerator = struct
-  let next_variable = ref (Char.to_int 'a')
+module Type_vars : sig
+  type t
 
-  let next () : concrete_type =
-    let var_c = !next_variable in
-    Int.incr next_variable;
-    TVariable (String.of_char (Char.of_int_exn var_c))
+  val create : unit -> t
+
+  val next : t -> concrete_type
+end = struct
+  type t = int ref
+
+  let create () = ref (Char.to_int 'a')
+
+  let next s =
+    let i = !s in
+    Int.incr s;
+    TVariable (String.of_char (Char.of_int_exn i))
 end
 
 (* a scheme needs to be instantiated to become a type *)
-let instantiate (vars, t) =
-  let var_with_type var = (var, TypeGenerator.next ()) in
+let instantiate tvg (vars, t) =
+  let type_var = Type_vars.next tvg in
+  let var_with_type var = (var, type_var) in
   let vars_with_types = List.map ~f:var_with_type vars in
   let subst = Map.of_alist_exn (module String) vars_with_types in
   Types_concrete_type.apply subst t
@@ -151,45 +160,45 @@ let rec unify t1 t2 =
 exception UndefinedVariable of string
 
 (* infer the type of an expression using a type environment *)
-let rec infer_helper (env : type_env) (expr : expression) :
-    subst * concrete_type =
+let rec infer_helper tvg env expr : subst * concrete_type =
   match expr with
   | ELiteral (LInt _) -> (Subst.null, TInt)
   | ELiteral (LBool _) -> (Subst.null, TBool)
   | EVariable var -> (
       match Map.find env var with
-      | Some scheme -> (Subst.null, instantiate scheme)
+      | Some scheme -> (Subst.null, instantiate tvg scheme)
       | None -> raise (UndefinedVariable "could not find given variable") )
   | ELambda (binder, body) ->
-      let binder_t = TypeGenerator.next () in
+      let binder_t = Type_vars.next tvg in
       let next_env =
         match Map.add env ~key:binder ~data:([], binder_t) with
         | `Ok e -> e
         | `Duplicate -> env
       in
-      let subst, body_t = infer_helper next_env body in
+      let subst, body_t = infer_helper tvg next_env body in
       (subst, TFunction (binder_t, body_t))
   | ELet (x, expr, body) ->
-      let subst1, expr_t = infer_helper env expr in
+      let subst1, expr_t = infer_helper tvg env expr in
       let next_env =
         match Map.add env ~key:x ~data:([], expr_t) with
         | `Ok e -> e
         | `Duplicate -> env
       in
       let subst2, body_t =
-        infer_helper (Types_type_env.apply subst1 next_env) body
+        infer_helper tvg (Types_type_env.apply subst1 next_env) body
       in
       let merged_subst = Subst.compose subst1 subst2 in
       (merged_subst, body_t)
   | EApplication (func, arg) ->
-      let result_t = TypeGenerator.next () in
-      let _, func_t = infer_helper env func in
-      let _, arg_t = infer_helper env arg in
+      let result_t = Type_vars.next tvg in
+      let _, func_t = infer_helper tvg env func in
+      let _, arg_t = infer_helper tvg env arg in
       let unified = unify func_t arg_t in
       (unified, result_t)
 
 let infer expr =
-  let _, inferred = infer_helper Subst.null expr in
+  let tvg = Type_vars.create () in
+  let _, inferred = infer_helper tvg Subst.null expr in
   inferred
 
 let rec string_of_type t =

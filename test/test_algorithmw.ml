@@ -9,18 +9,18 @@ let () =
     [
       (int_literal, TInt);
       (bool_literal, TBool);
-      (
-        (* \x -> 0 *)
+      ( (* \x -> 0 *)
         ELambda ("x", int_literal),
         (* 'a -> int *)
-        TFunction (TVariable "a", TInt)
-      );
-      (
-        (* \x -> x 0 *)
-        ELambda ("x", (EApplication (EVariable "x", int_literal))),
+        TFunction (TVariable "a", TInt) );
+      ( (* \x -> x *)
+        ELambda ("x", EVariable "x"),
+        (* 'a -> 'a *)
+        TFunction (TVariable "a", TVariable "a") );
+      ( (* \x -> x 0 *)
+        ELambda ("x", EApplication (EVariable "x", int_literal)),
         (* int -> 'a -> 'a *)
-        TFunction ((TFunction (TInt, TVariable "a")), (TVariable "a"))
-      );
+        TFunction (TFunction (TInt, TVariable "a"), TVariable "a") );
     ]
   in
   let check (expr, t) =
