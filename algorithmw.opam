@@ -7,3 +7,6 @@ build: [
   ["dune" "build" "-p" name "@doc"] {with-doc}
 ]
 maintainer: ["Christian Scott <me@christianfscott.com>"]
+depends: [
+  "base" {>= "0.13.1"}
+]
