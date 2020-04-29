@@ -167,8 +167,11 @@ let rec unify t1 t2 =
   | t, TVariable u -> var_bind u t
   | TInt, TInt | TBool, TBool -> Subst.null
   | t, u ->
-    let msg = Printf.sprintf "types %s and %s cannot be unified" (string_of_type t) (string_of_type u) in
-    raise (NotUnifiable msg)
+      let msg =
+        Printf.sprintf "types %s and %s cannot be unified" (string_of_type t)
+          (string_of_type u)
+      in
+      raise (NotUnifiable msg)
 
 exception UndefinedVariable of string
 
@@ -180,7 +183,10 @@ let rec infer_helper tv env expr : subst * concrete_type =
   | EVariable var -> (
       match Map.find env var with
       | Some scheme -> (Subst.null, instantiate tv scheme)
-      | None -> raise (UndefinedVariable (Printf.sprintf "could not find variable %s" var)) )
+      | None ->
+          raise
+            (UndefinedVariable (Printf.sprintf "could not find variable %s" var))
+      )
   | ELambda (binder, body) ->
       let binder_t = Type_vars.next tv in
       let next_env =
@@ -206,8 +212,13 @@ let rec infer_helper tv env expr : subst * concrete_type =
       let result_t = Type_vars.next tv in
       let s1, func_t = infer_helper tv env func in
       let s2, arg_t = infer_helper tv (Types_type_env.apply s1 env) arg in
-      let s3 = unify (Types_concrete_type.apply s2 func_t) (TFunction (arg_t, result_t)) in
-      (s3, result_t)
+      let s3 =
+        let x = Types_concrete_type.apply s2 func_t in
+        let y = TFunction (arg_t, result_t) in
+        unify x y
+      in
+      let subst = Subst.compose s3 (Subst.compose s2 s1) in
+      (subst, Types_concrete_type.apply s3 result_t)
 
 let infer expr =
   let tv = Type_vars.create () in
