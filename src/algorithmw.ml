@@ -151,7 +151,8 @@ let rec unify t1 t2 =
 exception UndefinedVariable of string
 
 (* infer the type of an expression using a type environment *)
-let rec infer (env : type_env) (expr : expression) : subst * concrete_type =
+let rec infer_helper (env : type_env) (expr : expression) :
+    subst * concrete_type =
   match expr with
   | ELiteral (LInt _) -> (Subst.null, TInt)
   | ELiteral (LBool _) -> (Subst.null, TBool)
@@ -166,24 +167,30 @@ let rec infer (env : type_env) (expr : expression) : subst * concrete_type =
         | `Ok e -> e
         | `Duplicate -> env
       in
-      let subst, body_t = infer next_env body in
+      let subst, body_t = infer_helper next_env body in
       (subst, TFunction (binder_t, body_t))
   | ELet (x, expr, body) ->
-      let subst1, expr_t = infer env expr in
+      let subst1, expr_t = infer_helper env expr in
       let next_env =
         match Map.add env ~key:x ~data:([], expr_t) with
         | `Ok e -> e
         | `Duplicate -> env
       in
-      let subst2, body_t = infer (Types_type_env.apply subst1 next_env) body in
+      let subst2, body_t =
+        infer_helper (Types_type_env.apply subst1 next_env) body
+      in
       let merged_subst = Subst.compose subst1 subst2 in
       (merged_subst, body_t)
   | EApplication (func, arg) ->
       let result_t = TypeGenerator.next () in
-      let _, func_t = infer env func in
-      let _, arg_t = infer env arg in
+      let _, func_t = infer_helper env func in
+      let _, arg_t = infer_helper env arg in
       let unified = unify func_t arg_t in
       (unified, result_t)
+
+let infer expr =
+  let _, inferred = infer_helper Subst.null expr in
+  inferred
 
 let rec string_of_type t =
   match t with

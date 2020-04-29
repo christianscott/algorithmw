@@ -9,11 +9,11 @@ let () =
     [
       (int_literal, TInt);
       (bool_literal, TBool);
-      (ELambda ("x", int_literal), TFunction (TVariable "a", TInt));
+      (ELambda ("x", int_literal), TFunction (TVariable "x", TInt));
     ]
   in
   let check (expr, t) =
-    let _, inferred = infer Subst.null expr in
+    let inferred = infer expr in
     if not (inferred = t) then
       let _ =
         Printf.printf "expected %s, got %s\n" (string_of_type t)
@@ -23,7 +23,7 @@ let () =
     else Success
   in
   let results = List.map check cases in
-  let succeeded = List.filter (fun result -> result == Success) results in
+  let succeeded = List.filter (fun x -> x == Success) results in
   if List.length succeeded == List.length results then
     Printf.printf "all tests passed"
   else
