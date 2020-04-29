@@ -23,7 +23,7 @@ let rec string_of_expression e =
   | EVariable v -> v
   | EApplication (e1, e2) ->
       Printf.sprintf "%s %s" (string_of_expression e1) (string_of_expression e2)
-  | ELambda (v, e) -> Printf.sprintf "%s -> %s" v (string_of_expression e)
+  | ELambda (v, e) -> Printf.sprintf "\\%s -> %s" v (string_of_expression e)
   | ELet (v, e1, e2) ->
       Printf.sprintf "let %s = %s in %s" v (string_of_expression e1)
         (string_of_expression e2)
@@ -38,7 +38,7 @@ let rec string_of_type t =
   match t with
   | TInt -> "int"
   | TBool -> "bool"
-  | TVariable var -> var
+  | TVariable var -> Printf.sprintf "'%s" var
   | TFunction (t1, t2) ->
       Printf.sprintf "%s -> %s" (string_of_type t1) (string_of_type t2)
 

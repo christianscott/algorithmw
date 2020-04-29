@@ -1,17 +1,13 @@
 open Algorithmw
 
-type test_result = Failure of string | Success
+type test_result = Failure of expression * concrete_type * concrete_type | Success
 
 let red s = Printf.sprintf "\x1B[31m%s\x1B[0m" s
 
 let check (expr, t) =
   let inferred = infer expr in
   if not (inferred = t) then
-    let msg =
-      Printf.sprintf "expected %s, got %s" (string_of_type t)
-        (string_of_type inferred)
-    in
-    Failure msg
+    Failure (expr, t, inferred)
   else Success
 
 let int_lit = ELiteral (LInt 0)
@@ -59,7 +55,11 @@ let report_failures results ~n_tests ~n_failed =
   Printf.printf "%d out of %d tests passing\n\n" (n_tests - n_failed) n_tests;
   for i = 0 to n_tests - 1 do
     match List.nth results i with
-    | Failure msg -> Printf.printf "test %d:\n  %s\n\n" (i + 1) (red msg)
+    | Failure (expr, want, got) ->
+      let e = string_of_expression expr in
+      let t1 = string_of_type want in
+      let t2 = string_of_type got in
+      Printf.printf "test %d: %s\n  expected: %s\n  got: %s\n\n" (i + 1) e t1 t2
     | _ -> ()
   done
 
