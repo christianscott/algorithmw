@@ -8,5 +8,6 @@ build: [
 ]
 maintainer: ["Christian Scott <me@christianfscott.com>"]
 depends: [
+  "dune"
   "base" {>= "0.13.1"}
 ]

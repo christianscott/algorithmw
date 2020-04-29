@@ -7,4 +7,7 @@
 
 (package
   (name algorithmw)
-  (depends (base (>= 0.13.1))))
+  (depends 
+    dune
+    (base (>= 0.13.1))
+  ))
