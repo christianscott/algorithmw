@@ -106,8 +106,6 @@ end
 module TypeGenerator = struct
   let next_variable = ref (Char.to_int 'a')
 
-  exception BadChar of string
-
   let next () : concrete_type =
     let var_c = !next_variable in
     Int.incr next_variable;
@@ -121,6 +119,7 @@ let instantiate (vars, t) =
   let subst = Map.of_alist_exn (module String) vars_with_types in
   Types_concrete_type.apply subst t
 
+(* Why am I not using this?
 exception FooBarRenameMe of string
 
 let is_var var t =
@@ -135,6 +134,7 @@ let var_bind var t =
     match Set.find ftvs ~f:(String.equal var) with
     | Some _ -> raise (FooBarRenameMe "AHHHH")
     | None -> Map.singleton (module String) var t
+*)
 
 let rec unify t1 t2 =
   match (t1, t2) with
